@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 
-from slugify import slugify
 import collections
 import csv
 import os
 import re
-import time
 import shutil
-import typing
+import time
+from datetime import datetime
+
 import zhconv
-from datetime import date, datetime
-from typing import IO
+from slugify import slugify
 
 archive_time = "2023-01-01 00:00:00"  # any questionnaire submitted before this will be archived
 
@@ -161,7 +160,7 @@ def load_colleges():
 
     # `provinces`: an dict whose keys are provinces and values are empty
     # `colleges`: dict, college name => province
-    return provinces, colleges  
+    return provinces, colleges
 
 
 def load_to_universities(universities: dict, row: list):
@@ -215,7 +214,7 @@ def process_universities(universities: dict, colleges: dict):
             name = line.rstrip('\n')
             if name in universities:
                 del universities[name]
-                
+
     middle_school_names = []
     for name in universities:
         if (name.endswith('中') or '中学' in name or name.endswith('高') or name.endswith('实验')) and name not in colleges:
@@ -223,16 +222,16 @@ def process_universities(universities: dict, colleges: dict):
     for name in middle_school_names:
         print(f'[info] \033[0;36m{name}\033[0m is removed')
         del universities[name]
-    
+
     whitelist = set()
     with open('whitelist.txt', 'r', encoding='utf-8') as f:
         for line in f:
             tmp_name = line.rstrip('\n')
             whitelist.add(tmp_name)
-            
+
     for name in universities.keys():
         if NORMAL_NAME_MATCHER.search(name) is None:
-            if not name in whitelist:
+            if name not in whitelist:
                 print(f'[warning] \033[0;36m{name}\033[0m may be invalid')
 
 
@@ -267,7 +266,7 @@ def write_to_markdown(universities: dict, filename_map: FilenameMap, archived: b
                 f.write('\n\n***\n\n'.join(additional_answers))
 
 
-def write_to_readme(universities: dict, filename_map: FilenameMap, readme_file_name: str, readme_template_name: str, nav_file_name: str, provinces: dict, colleges: dict, archived=False):  
+def write_to_readme(universities: dict, filename_map: FilenameMap, readme_file_name: str, readme_template_name: str, nav_file_name: str, provinces: dict, colleges: dict, archived=False):
     with open(readme_file_name, 'w', encoding='utf-8') as readme_file,\
          open(readme_template_name, 'r', encoding='utf-8') as template_file,\
          open(nav_file_name, 'w', encoding='utf-8') as nav_file:
@@ -308,6 +307,8 @@ def write_to_readme(universities: dict, filename_map: FilenameMap, readme_file_n
                     readme_file.write('{} → [{}]({})\n\n'.format(original, name, generate_markdown_path(filename_map[name], True, archived)))
 
         for province, college in provinces.items():
+            if not college:
+                continue
             nav_file.write(f'    - {province}:\n')
             college.sort()
             for name in college:
@@ -317,7 +318,7 @@ def write_to_readme(universities: dict, filename_map: FilenameMap, readme_file_n
 def main():
     provinces, colleges = load_colleges()
     provinces_archived, colleges_archived = load_colleges()
-    
+
     archive_date = datetime.strptime(archive_time, '%Y-%m-%d %H:%M:%S')
 
     # ===== read from csv =====
@@ -363,7 +364,7 @@ def main():
          open(join_path('dist', 'docs', 'archived', 'nav.txt'), 'r', encoding='utf-8') as nav_archived_f,\
          open('mkdocs_template.yml', 'r', encoding='utf-8') as mkdocs_template_f,\
          open(join_path('dist', 'mkdocs.yml'), 'w', encoding='utf-8') as mkdocs_f:
-        
+
         mkdocs_f.write(mkdocs_template_f.read().replace('[universities_nav]',nav_f.read()).replace('[universities_nav_archived]',nav_archived_f.read()).replace('[current_time]',time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
 
 if __name__ == '__main__':
