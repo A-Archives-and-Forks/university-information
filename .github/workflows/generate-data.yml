@@ -69,8 +69,10 @@ jobs:
         commit_message="$(git log --pretty="%h %s" -1)"
         rm -rf colleges.chat/docs
         rm -f colleges.chat/mkdocs.yml
+        rm -rf colleges.chat/overrides
         mv questionnaires/dist/docs colleges.chat/docs
         mv questionnaires/dist/mkdocs.yml colleges.chat/mkdocs.yml
+        mv questionnaires/dist/overrides colleges.chat/
         cd colleges.chat
         git add -A
         if ! git diff-index --quiet HEAD --; then git commit -m "update: $commit_message" && git push -f ; fi      
